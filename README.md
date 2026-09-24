@@ -10,6 +10,8 @@ the whole Kolkata year: Monsoon Flood and Dengue, Pujo Safety, Summer Heat and
 Water, Winter Air and Dust, Post-Pujo Cleanup, Pre-Monsoon Storm Prep, East
 Kolkata Wetlands Watch, and Everyday Para Mode.
 
+![ParaReport issue feed: 15 seeded Kolkata reports on a map, filtered by mode, severity, and status](docs/screenshot.jpg)
+
 ## Product loop
 
 1. **Report** (`/`) — text in Bengali/Hindi/English plus an optional photo and
@@ -35,15 +37,23 @@ Kolkata Wetlands Watch, and Everyday Para Mode.
 
 ## Run it
 
+Needs Node 22.13+ (for `node:sqlite`).
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The database seeds itself with 15 sample Kolkata
+Open http://localhost:3000. Tested on macOS (Apple Silicon) with Node 24: the
+35 unit and integration tests, typecheck, lint, and production build all pass. The database seeds itself with 15 sample Kolkata
 issues on first run; delete `data/` to reset.
 
 ### Enable Gemma analysis (optional)
+
+The serve script calls `llama-server` from llama.cpp. On macOS,
+`brew install llama.cpp` provides it with Metal support. Point
+`GEMMA_GGUF_PATH` at a Gemma GGUF, for example a `gemma-4-E2B-it` quant
+downloaded from Hugging Face.
 
 ```bash
 # Terminal 1
@@ -149,10 +159,10 @@ npm run reports:test
 
 The app runs in two modes. As a **local node** it is a single Node server
 (SQLite file + local photo uploads), so deploy it anywhere with a persistent
-disk: Fly.io, Railway, Render, or a VPS. In **hosted mode** (`PARAREPORT_STORAGE=hosted`,
-e.g. on Vercel) the storage adapter targets external Postgres-compatible storage
-plus object storage; the adapter interface lives in `lib/storage/` and the photo
-layer in `lib/uploads.ts`. Either mode can join a federation of trusted nodes.
+disk: Fly.io, Railway, Render, or a VPS. **Hosted mode** (`PARAREPORT_STORAGE=hosted`,
+e.g. on Vercel) is designed for external Postgres-compatible storage plus
+object storage, but the concrete driver isn't wired yet; the adapter interface
+lives in `lib/storage/` and the photo layer in `lib/uploads.ts`. Either mode can join a federation of trusted nodes.
 
 ParaReport generates department-ready civic packets. It does not submit to KMC
 systems and never claims official complaint status.
