@@ -5,10 +5,11 @@ community-first Rust rebuild. New development takes place on
 [`main`](https://github.com/kanishkpaul/parareport/tree/main).
 
 The preserved source revision is
-[`9839dc1`](https://github.com/kanishkpaul/parareport/tree/9839dc1d56b6ddb767be57f99b850bfd18c441ce).
+[`4672e94`](https://github.com/kanishkpaul/parareport/tree/4672e94501b1259addab497470a00c71c2727c4b).
 All tracked files from that revision remain unchanged except this README.
 The previous README is retained in [docs/ORIGINAL_README.md](docs/ORIGINAL_README.md).
-History is retained intact. This snapshot is a prototype, not the architecture
+File snapshots and primary authorship are preserved. Claude coauthor trailers
+were removed from commit history at the owner's request. This snapshot is a prototype, not the architecture
 or readiness claim for the new product.
 
 ## What is here
@@ -62,4 +63,5 @@ not preserve untracked databases, photographs, credentials or installed models.
 Keep `old` as the source reference. Build the replacement on `main`; do not
 merge the old application back into it. Any new commit or public contribution
 must omit AI coauthor trailers, generated-by credits and agent session links.
-Historical commit messages have not been rewritten.
+The October 2026 history cleanup removed the existing Claude coauthor trailer;
+commit hashes changed where messages or parent hashes changed.
