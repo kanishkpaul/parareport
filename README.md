@@ -1,78 +1,174 @@
-# ParaReport
+<div align="center">
+  <img src="public/parareport-logo.svg" alt="ParaReport logo" width="88" height="88" />
+  <h1>ParaReport</h1>
+  <p><strong>Local problems. A lasting record.</strong></p>
+  <p>A civic reporting prototype for Kolkata’s paras — from a resident’s observation<br />to a saved receipt, a neighborhood map, and a shared record across nodes.</p>
+  <p>
+    <code>Next.js</code> &nbsp; <code>TypeScript</code> &nbsp; <code>SQLite</code> &nbsp; <code>Local / BYOK AI</code>
+  </p>
+  <p>
+    <a href="#quick-start">Run locally</a> &nbsp;·&nbsp;
+    <a href="#inside-the-demo">Explore the demo</a> &nbsp;·&nbsp;
+    <a href="#two-nodes-one-shared-record">Try federation</a> &nbsp;·&nbsp;
+    <a href="#verification">Verification</a>
+  </p>
+</div>
 
-A Kolkata-focused civic reporting prototype built for a hackathon. Turn a text
-report and optional photo attachment into a stored, shareable receipt, then
-browse reports through a map and dashboard.
+<br />
 
-![ParaReport demo: labeled sample reports and map](docs/demo-feed.png)
+![ParaReport’s issue feed and Kolkata map, showing illustrative sample locations](docs/demo-feed.png)
 
-## What works
+<p align="center"><sub>Hackathon prototype · 15 labeled sample reports · Illustrative map pins</sub></p>
 
-- Next.js / React / TypeScript interface with eight seasonal reporting modes.
-- SQLite persistence, photo attachments, filters, receipts and dashboard counts.
-- Deterministic rules by default; optional local and BYOK OpenAI-compatible models.
-- Trusted-node federation: signed receipt exchange, resumable sequence cursors,
-  duplicate handling and propagation of later status/analysis changes.
-- English complaint drafts and Bengali/Hindi share text. Authority submission
-  remains a placeholder: nothing is submitted or tracked.
+## A report should outlast the conversation
 
-This is a portfolio demo. The 15 initial reports are labeled samples, their pins
-are illustrative, and dashboard counts include them. Anonymous status updates
-are not independent verification. Photos are stored, not interpreted. Language
+A flooded lane, a broken streetlight, or a blocked drain can disappear into a
+chat thread. ParaReport gives the observation a place to live: a stored report,
+a structured receipt, and a view of what has been reported around the para.
+
+Built around Kolkata’s seasonal problems, the prototype brings together report
+intake, SQLite persistence, map views, optional model analysis, and signed
+receipt exchange between trusted nodes.
+
+## Inside the demo
+
+| Capture | Understand | Keep track |
+| --- | --- | --- |
+| Write a report and attach a photo. Save it to SQLite before optional inference begins. | Generate suggested severity, risk flags, action checklists, and share text using rules or a configured model. | Browse receipts, filter the map/feed, record demo status changes, and exchange updates with another node. |
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/demo-dashboard.png" alt="Dashboard with sample counts and federation controls" /></td>
+    <td width="50%"><img src="docs/demo-report.png" alt="Report receipt with suggested actions, share text, and an authority draft placeholder" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Dashboard &amp; node exchange</sub></td>
+    <td align="center"><sub>Structured receipt &amp; share text</sub></td>
+  </tr>
+</table>
+
+**Eight seasonal modes:** Everyday · Summer heat & water · Storm preparation ·
+Monsoon flood & dengue · Pujo safety · Post-Pujo cleanup · Winter air & dust ·
+Wetlands watch.
+
+Receipts include English complaint drafts and Bengali/Hindi share text.
+**Authority submission is a placeholder:** nothing is submitted or tracked.
+Photos are attachments, not image analysis; classification, language output,
 and safety suggestions need human review.
 
-## Run
+## Quick start
 
-Use Node 24 LTS (Node 22.13+ supports the SQLite backend).
+Use **Node 24 LTS**. The SQLite backend requires Node 22.13 or newer.
 
 ```sh
+git clone https://github.com/kanishkpaul/parareport.git
+cd parareport
 npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. No model server or API key is required. Reports live
-in `data/parareport.db`; photo attachments live in `public/uploads/`. These paths
-are untracked. Use synthetic reports: the prototype has no authentication or
-private-report access controls.
+Open [localhost:3000](http://localhost:3000). No API key, model download, or
+model server is required.
 
-Set `PARAREPORT_SEED=false` before opening a fresh database to start without
-samples. `PARAREPORT_DATA_DIR` selects another SQLite directory. Existing
-sample records are retained when changing this setting.
+The first database open loads 15 sample reports. Explore the map, save a
+synthetic report, open its receipt, then reload to see the persisted record.
+Dashboard totals include samples; anonymous updates are not independent checks.
 
-## Optional AI
+<details>
+<summary><strong>Storage and a blank demo database</strong></summary>
 
-Local inference uses any compatible `/v1/chat/completions` endpoint, including
-llama.cpp or a compatible local server:
+Reports live in `data/parareport.db`; photos live in `public/uploads/`. Both
+paths are untracked.
+
+To start a fresh database without samples:
 
 ```sh
-GEMMA_ENABLED=true GEMMA_BASE_URL=http://127.0.0.1:8081/v1 GEMMA_MODEL=my-model npm run dev
+PARAREPORT_SEED=false PARAREPORT_DATA_DIR=./data/blank-demo npm run dev
 ```
 
-For llama.cpp, `GEMMA_GGUF_PATH=/path/to/model.gguf npm run gemma:serve`
-starts the separately installed runtime. Weights are not included.
+This leaves the existing database intact. Changing the seed setting does not
+remove sample records already stored. `PARAREPORT_DATA_DIR` changes the database
+location; photo uploads still use `public/uploads/`.
 
-For BYOK, open **Bring your own model** in the report form and enter the endpoint,
-model and API key. The key stays in tab session storage and transient request
-headers; it is not saved in reports or federation payloads. The server makes the
-model request. Local endpoints are local to the server, not necessarily the
-visitor's phone. Use HTTPS for remote providers.
+</details>
 
-A rules receipt is saved before optional inference begins. The response may
-wait for inference; model failure leaves the saved rules receipt usable and
-shows the fallback. Both provider paths use text and attachment hints, not image
-pixels. Template language output and model suggestions are not validated facts.
+## Your choice of analysis
 
-## Show federation
+| Mode | Setup | Behavior |
+| --- | --- | --- |
+| **Rules — default** | None | Deterministic classification and language templates; no inference request. |
+| **Local model** | An OpenAI-compatible endpoint, such as llama.cpp | Optional text analysis through your configured local server. |
+| **BYOK** | Endpoint, model, and key in **Bring your own model** | Optional text analysis through the provider you select. |
 
-Follow the [two-node walkthrough](docs/FEDERATION_DEMO.md). On each dashboard,
-**Check node** shows identity/configuration and **Sync peers** pulls receipts.
-Create a synthetic report on node A, sync node B, then change its status on A
-and sync B again. Samples and attachments are excluded from federation.
+A rules receipt is durable **before** an optional model call starts. The
+response may wait for inference; failure retains the saved rules receipt and
+shows the fallback. Neither provider path inspects photo pixels.
 
-The shared-secret mesh is an experimental trust model, not independent
-per-node identity. No automatic authority contact occurs.
+<details>
+<summary><strong>Connect a local model</strong></summary>
 
-## Verify
+Point the app at a compatible `/v1/chat/completions` endpoint:
+
+```sh
+GEMMA_ENABLED=true \
+GEMMA_BASE_URL=http://127.0.0.1:8081/v1 \
+GEMMA_MODEL=my-model npm run dev
+```
+
+For a separately installed llama.cpp runtime:
+
+```sh
+GEMMA_GGUF_PATH=/path/to/model.gguf npm run gemma:serve
+```
+
+Model weights and native inference runtimes are not bundled with the app.
+“Local” means local to the application server, not necessarily the visitor’s phone.
+
+</details>
+
+<details>
+<summary><strong>Use your own provider</strong></summary>
+
+Open **Bring your own model** in the report form and enter an OpenAI-compatible
+base URL, model name, and API key. Use HTTPS for remote providers.
+
+The key stays in tab session storage and transient request headers. It is not
+saved in reports or federation payloads. The application server makes the model
+request. If the provider fails, the receipt uses rules rather than silently
+switching to a different model provider.
+
+</details>
+
+## Two nodes, one shared record
+
+Create a report on **node A**, sync **node B**, then change the status on A and
+sync again. B receives the newer snapshot without creating a duplicate.
+
+- **Sequence cursors** cover new reports and later edits, including timestamp ties.
+- **Signed snapshots** are validated before import and namespaced by origin.
+- **Origin-only updates** keep imported receipts read-only on receiving nodes.
+- **Bounded pulls** resume from stored progress when a peer comes back online.
+- **Sample reports and attachments** stay out of the federation feed.
+
+On the dashboard, use **Check node** and **Sync peers** to show the exchange.
+The [two-node walkthrough](docs/FEDERATION_DEMO.md) includes setup commands,
+a demo sequence, and protocol details.
+
+This is a shared-secret prototype. Its signatures establish shared-secret
+provenance, not factual truth or independent per-node identity. Intermediate
+states and deletions are not replicated.
+
+## Under the hood
+
+| Layer | Implementation |
+| --- | --- |
+| Interface | Next.js App Router, React, TypeScript, Leaflet |
+| Persistence | Node’s built-in `node:sqlite`, with a local change journal |
+| Analysis | Deterministic rules and optional OpenAI-compatible adapters |
+| Federation | HMAC-SHA256 snapshots, sequence pagination, newer-origin updates |
+| Verification | Node test runner and a disposable two-node production smoke test |
+
+## Verification
 
 ```sh
 npm test
@@ -82,21 +178,22 @@ npm run build
 npm run demo:test
 ```
 
-`demo:test` starts two production servers on loopback ports 3201–3202 and a
-synthetic model stub on 3203, with disposable databases. It verifies exchange,
-updates, validation, origin protection, and save-before-AI/BYOK behavior. It
-requires a production build and makes no paid calls.
+The suite contains **40 tests** covering providers, storage, migration,
+signing, and federation regressions. The production smoke test starts two
+servers and a synthetic model stub on loopback ports 3201–3203. It checks
+receipt exchange, later updates, validation, origin protection, save-before-AI,
+and BYOK behavior, using disposable databases and no paid calls.
 
-## Scope and limits
+See [verification notes](docs/TESTING.md) for the checked evidence, manual
+walkthrough, and remaining development dependency advisories.
 
-The UI retains the original design. There is no real login, full offline browser
-storage, geocoding, production moderation, or hosted/Postgres backend. New places
-retain written locations without guessed pins or automatic token-based merging.
-OpenStreetMap tiles require internet access. All public receipt fields should be
-treated as public; redaction and privacy controls are not implemented.
+## Prototype boundaries
 
-Run the writable demo locally or on a trusted network. Public hosting requires
-access controls, upload handling and restricted model egress; the BYOK adapter
-allows configured HTTP endpoints for local compatibility. Do not expose it as
-an unrestricted public proxy. Larger rebuild plans are retained only in the
-local `new` branch; this branch remains the working hackathon application.
+Use synthetic reports and run the writable demo locally or on a trusted network.
+There is no authentication, private-report access control, redaction, production
+moderation, full offline browser storage, or hosted/Postgres backend.
+
+New places retain their written locations without guessed pins or automatic
+location-token merging. OpenStreetMap tiles require internet access. Public
+hosting needs access controls, safer upload handling, and restricted model
+egress; local/BYOK compatibility does not make the server a safe public proxy.
