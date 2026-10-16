@@ -50,7 +50,7 @@ export default async function IssuePage({ params }: { params: Params }) {
         <p>
           {issue.locationText}
           {issue.ward ? ` · ${issue.ward}` : ""} · reported {formatDate(issue.createdAt)} · status:{" "}
-          {issue.status.replace("_", " ")}
+          {issue.status === "verified" ? "reported" : issue.status.replaceAll("_", " ")}
         </p>
       </div>
 
@@ -65,6 +65,7 @@ export default async function IssuePage({ params }: { params: Params }) {
         />
       ) : null}
 
+      <p>{issue.isSeed ? "Sample report · illustrative evidence" : "Prototype report · not independently verified"}{issue.originNodeId ? ` · Synced from ${issue.originNodeId}` : ""}</p>
       <CivicReceiptCard receipt={issue.receipt} issueId={issue.id} />
 
       <IssueActions issue={issue} />
@@ -75,7 +76,7 @@ export default async function IssuePage({ params }: { params: Params }) {
           <p>
             {cluster.reportCount} reports here between {formatDate(cluster.firstReportedAt)} and{" "}
             {formatDate(cluster.lastReportedAt)}, with {cluster.unresolvedConfirmations} unresolved
-            confirmations from residents.
+            anonymous demo updates.
           </p>
           <ul className="plain-list">
             {siblings.map((sibling) => (
@@ -90,10 +91,10 @@ export default async function IssuePage({ params }: { params: Params }) {
 
       {issue.fixedProofUrl ? (
         <section className="panel">
-          <h2>Fixed with proof</h2>
+          <h2>Marked fixed · unreviewed attachment</h2>
           <Image
             src={issue.fixedProofUrl}
-            alt="Proof photo showing the issue was fixed"
+            alt="Attachment submitted with the fixed claim"
             width={720}
             height={405}
             className="detail-photo"

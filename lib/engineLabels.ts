@@ -5,11 +5,11 @@ import type { AnalysisEngine } from "@/types/civic";
 export function engineLabel(engine: AnalysisEngine): string {
   switch (engine) {
     case "local-gemma":
-      return "local Gemma";
+      return "local model";
     case "byok":
       return "your own model (BYOK)";
     case "rules":
     default:
-      return "the offline rules engine";
+      return "the rules engine";
   }
 }

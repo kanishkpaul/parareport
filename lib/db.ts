@@ -45,6 +45,10 @@ CREATE INDEX IF NOT EXISTS idx_issues_mode ON issues(mode);
 CREATE INDEX IF NOT EXISTS idx_issues_status ON issues(status);
 CREATE INDEX IF NOT EXISTS idx_issues_group ON issues(duplicate_group_id);
 CREATE INDEX IF NOT EXISTS idx_issues_created ON issues(created_at);
+CREATE TABLE IF NOT EXISTS federation_changes (
+  sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  issue_id TEXT NOT NULL
+);
 
 -- Cursor bookmarks for federation pulls, one row per peer URL.
 CREATE TABLE IF NOT EXISTS federation_cursors (
@@ -88,7 +92,19 @@ export function getDb(): DatabaseSync {
     db.exec("PRAGMA journal_mode = WAL;");
     db.exec(SCHEMA);
     migrate(db);
-    seedIfEmpty(db);
+    if (process.env.PARAREPORT_SEED !== "false") seedIfEmpty(db);
+    db.exec(`
+      INSERT INTO federation_changes (issue_id)
+        SELECT id FROM issues WHERE origin_node_id IS NULL AND is_seed = 0
+        AND id NOT IN (SELECT issue_id FROM federation_changes);
+      CREATE TRIGGER IF NOT EXISTS federation_insert AFTER INSERT ON issues
+        WHEN NEW.origin_node_id IS NULL AND NEW.is_seed = 0
+        BEGIN INSERT INTO federation_changes (issue_id) VALUES (NEW.id); END;
+      CREATE TRIGGER IF NOT EXISTS federation_update AFTER UPDATE ON issues
+        WHEN NEW.origin_node_id IS NULL AND NEW.is_seed = 0
+        BEGIN INSERT INTO federation_changes (issue_id) VALUES (NEW.id); END;
+      DELETE FROM federation_cursors WHERE cursor NOT LIKE 's:%';
+    `);
     globalDb.__parareportDb = db;
   }
 

@@ -30,7 +30,7 @@ export function issueToPayload(issue: CivicIssue): FederatedIssuePayload {
 // receipt is a no-op (dedupe by primary key). Namespaced by origin node id to
 // avoid collisions between peers that reuse issue ids.
 export function remoteIssueId(originNodeId: string, originIssueId: string): string {
-  return `fed:${originNodeId}:${originIssueId}`;
+  return `fed:${encodeURIComponent(originNodeId)}:${encodeURIComponent(originIssueId)}`;
 }
 
 // Reconstructs a CivicIssue from a verified envelope, marked as remote-origin.

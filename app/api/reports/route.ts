@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { analyzeReport, readByokConfig } from "@/lib/providers";
 import { createIssueFromAnalysis, getClusterSummary, listIssues } from "@/lib/store";
 import { savePhoto, UploadError, type SavedUpload } from "@/lib/uploads";
+import { analyzeIssue } from "@/lib/analyzer";
+import { createReceipt } from "@/lib/receipts";
+import { getStore } from "@/lib/storage";
+import { seasonalModes } from "@/lib/modes";
 import type {
   AnalyzeIssueInput,
   IssueStatus,
@@ -31,6 +35,7 @@ export async function POST(request: Request) {
   let landmark: string | undefined;
   let userSelectedMode: SeasonalModeId | undefined;
   let photo: SavedUpload | undefined;
+  let photoFile: File | undefined;
 
   try {
     const contentType = request.headers.get("content-type") || "";
@@ -44,10 +49,14 @@ export async function POST(request: Request) {
       const file = form.get("photo");
 
       if (file instanceof File && file.size > 0) {
-        photo = await savePhoto(file);
+        photoFile = file;
       }
     } else {
       const body = await request.json();
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+          [body.text, body.location, body.landmark, body.mode].some(value => value !== undefined && typeof value !== "string")) {
+        return NextResponse.json({ error: "Report fields must be text." }, { status: 400 });
+      }
       text = String(body.text || "").trim();
       locationText = String(body.location || "").trim();
       landmark = body.landmark ? String(body.landmark) : undefined;
@@ -61,6 +70,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  if (userSelectedMode && !seasonalModes.some(mode => mode.id === userSelectedMode)) {
+    return NextResponse.json({ error: "Choose a supported seasonal mode." }, { status: 400 });
+  }
+  if (text.length > 10000 || locationText.length > 500 || (landmark?.length ?? 0) > 500) {
+    return NextResponse.json({ error: "Use at most 10,000 characters for the report and 500 for each place field." }, { status: 400 });
+  }
+  if (photoFile) {
+    try { photo = await savePhoto(photoFile); }
+    catch (error) {
+      return NextResponse.json({ error: error instanceof UploadError ? error.message : "Photo could not be saved. Try again." }, { status: error instanceof UploadError ? 400 : 500 });
+    }
+  }
   if (!text && !photo) {
     return NextResponse.json(
       { error: "Describe the issue or attach a photo." },
@@ -78,19 +99,34 @@ export async function POST(request: Request) {
 
   const byok = readByokConfig(request.headers);
 
-  const { output, engine } = await analyzeReport(input, {
-    photo: photo ? { base64: photo.base64, mimeType: photo.mimeType } : undefined,
-    byok
-  });
-
-  const issue = createIssueFromAnalysis({
+  // The rules receipt is durable before any optional inference request.
+  let issue = createIssueFromAnalysis({
     rawText: text || "(photo-only report)",
-    analysis: output,
+    analysis: analyzeIssue(input),
     locationText: locationText || "Location not provided",
     landmark,
     photoUrl: photo?.publicUrl,
-    analysisEngine: engine
+    analysisEngine: "rules"
   });
+  let analysisWarning: string | undefined;
+  try {
+    const { output, engine } = await analyzeReport(input, {
+      photo: photo ? { base64: photo.base64, mimeType: photo.mimeType } : undefined,
+      byok
+    });
+    if (engine !== "rules") {
+      getStore().updateAnalysis({ ...issue, title: `${output.category} at ${issue.locationText}`, cleanSummary: output.cleanSummary,
+        mode: output.mode, category: output.category, subcategories: output.subcategories,
+        severity: output.severity, riskFlags: output.riskFlags,
+        departmentSuggestions: output.departmentSuggestions,
+        receipt: createReceipt(issue.id, output), analysisEngine: engine });
+      issue = getStore().get(issue.id)!;
+    } else if (byok || process.env.GEMMA_ENABLED === "true") {
+      analysisWarning = "Report saved. The model was unavailable; this receipt uses rules.";
+    }
+  } catch {
+    analysisWarning = "Report saved. Optional analysis could not be applied.";
+  }
 
   const cluster = issue.duplicateGroupId ? getClusterSummary(issue.duplicateGroupId) : undefined;
 
@@ -98,7 +134,8 @@ export async function POST(request: Request) {
     issue,
     receipt: issue.receipt,
     cluster,
-    analysisEngine: engine
+    analysisEngine: issue.analysisEngine,
+    analysisWarning
   };
 
   return NextResponse.json(result, { status: 201 });

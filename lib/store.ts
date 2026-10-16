@@ -29,10 +29,9 @@ export function createIssueFromAnalysis(params: {
   photoUrl?: string;
   analysisEngine: CivicIssue["analysisEngine"];
 }): CivicIssue {
-  const id = `issue-${randomUUID().slice(0, 8)}`;
+  const id = `issue-${randomUUID()}`;
   const now = new Date().toISOString();
   const { analysis } = params;
-  const clusterMatch = findClusterMatch(params.locationText, analysis.mode);
 
   const issue: CivicIssue = {
     id,
@@ -47,14 +46,12 @@ export function createIssueFromAnalysis(params: {
     departmentSuggestions: analysis.departmentSuggestions,
     locationText: params.locationText,
     landmark: params.landmark,
-    lat: clusterMatch?.lat,
-    lng: clusterMatch?.lng,
-    status: analysis.followUpQuestion ? "needs_more_info" : "new",
+    status: "new",
     photoUrl: params.photoUrl,
     createdAt: now,
     updatedAt: now,
-    duplicateGroupId: clusterMatch?.groupId ?? newGroupId(params.locationText, analysis.mode),
-    verificationCount: 1,
+    duplicateGroupId: newGroupId(params.locationText, analysis.mode),
+    verificationCount: 0,
     unresolvedConfirmations: 0,
     receipt: createReceipt(id, analysis),
     analysisEngine: params.analysisEngine,
@@ -146,7 +143,7 @@ export function getClusterSummary(groupId: string): ClusterSummary | undefined {
 // --- dashboard --------------------------------------------------------------
 
 export function getDashboardStats(): DashboardStats {
-  const all = listIssues({ limit: 1000 });
+  const all = listIssues({ limit: -1 });
   const open = all.filter((issue) => issue.status !== "fixed" && issue.status !== "archived");
   const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
 

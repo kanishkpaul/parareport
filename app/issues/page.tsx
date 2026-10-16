@@ -39,6 +39,7 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
       </div>
 
       <form className="filter-bar" method="get" aria-label="Filter issues">
+        {params.groupId ? <input type="hidden" name="groupId" value={params.groupId} /> : null}
         <label>
           Mode
           <select name="mode" defaultValue={params.mode || ""}>
@@ -67,7 +68,7 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
             <option value="">Any status</option>
             <option value="open">Open</option>
             <option value="new">New</option>
-            <option value="verified">Verified</option>
+            <option value="verified">Reported (legacy)</option>
             <option value="in_progress">In progress</option>
             <option value="fixed">Fixed</option>
           </select>
@@ -77,6 +78,7 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
         </button>
       </form>
 
+      <p>Sample reports have illustrative map pins. New reports keep their written location without guessed coordinates.</p>
       <IssueMap issues={issues} />
 
       <div className="issue-grid">

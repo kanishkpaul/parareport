@@ -44,6 +44,7 @@ export function ReportFlow() {
       }
 
       setResult(body as ReportSubmissionResult);
+      setError((body as ReportSubmissionResult).analysisWarning ?? null);
       setSelectedMode((body as ReportSubmissionResult).issue.mode);
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
@@ -63,7 +64,7 @@ export function ReportFlow() {
           isSubmitting={isSubmitting}
         />
         {error ? <p className="form-error" role="alert">{error}</p> : null}
-        <ByokSettings value={byok} onChange={setByok} />
+        <ByokSettings key={byok ? JSON.stringify([byok.baseUrl, byok.model]) : "off"} value={byok} onChange={setByok} />
       </section>
 
       {result ? (
@@ -72,7 +73,6 @@ export function ReportFlow() {
             <p>
               Saved as <Link href={`/issues/${result.issue.id}`}>{result.issue.id}</Link> ·
               analyzed by {engineLabel(result.analysisEngine)}
-              {result.issue.status === "needs_more_info" && result.receipt ? " · needs one more detail" : ""}
             </p>
             {result.cluster && result.cluster.reportCount > 1 ? (
               <p className="cluster-note">

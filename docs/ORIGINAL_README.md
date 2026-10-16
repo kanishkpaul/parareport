@@ -10,7 +10,7 @@ the whole Kolkata year: Monsoon Flood and Dengue, Pujo Safety, Summer Heat and
 Water, Winter Air and Dust, Post-Pujo Cleanup, Pre-Monsoon Storm Prep, East
 Kolkata Wetlands Watch, and Everyday Para Mode.
 
-![ParaReport issue feed: 15 seeded Kolkata reports on a map, filtered by mode, severity, and status](docs/screenshot.jpg)
+![ParaReport issue feed: 15 seeded Kolkata reports on a map, filtered by mode, severity, and status](screenshot.jpg)
 
 ## Product loop
 

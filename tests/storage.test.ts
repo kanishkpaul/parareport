@@ -80,14 +80,14 @@ test("has reflects presence", () => {
   assert.equal(store.has(issue.id), true);
 });
 
-test("incrementUnresolved bumps counts and promotes new -> verified", () => {
+test("incrementUnresolved records an anonymous update without verification", () => {
   const issue = makeIssue();
   store.insert(issue);
 
   const updated = store.incrementUnresolved(issue.id);
   assert.equal(updated?.unresolvedConfirmations, 1);
-  assert.equal(updated?.verificationCount, 2);
-  assert.equal(updated?.status, "verified");
+  assert.equal(updated?.verificationCount, 1);
+  assert.equal(updated?.status, "new");
 });
 
 test("markFixed sets status and proof url", () => {
@@ -124,28 +124,13 @@ test("countByOrigin separates local and remote issues", () => {
   assert.equal(store.countByOrigin("remote"), remoteBefore + 1);
 });
 
-test("localIssuesSince returns only local-origin issues after the cursor, oldest-first", () => {
-  const a = makeIssue({ createdAt: "2027-01-01T00:00:00.000Z" });
-  const b = makeIssue({ createdAt: "2027-01-02T00:00:00.000Z" });
+test("local feed excludes remote and sample records", () => {
+  const a = makeIssue();
   store.insert(a);
-  store.insert(b);
-  // A remote issue in the same window must not appear in the feed.
-  store.upsertRemote(
-    makeIssue({
-      id: "fed:node-d:issue-1",
-      originNodeId: "node-d",
-      originIssueId: "issue-1",
-      createdAt: "2027-01-03T00:00:00.000Z"
-    })
-  );
-
-  const since = store.localIssuesSince("2026-12-31T00:00:00.000Z", 100);
-  const ids = since.map((issue) => issue.id);
-  assert.ok(ids.includes(a.id));
-  assert.ok(ids.includes(b.id));
-  assert.ok(!ids.some((id) => id.startsWith("fed:")));
-  // oldest-first ordering
-  assert.ok(since.findIndex((i) => i.id === a.id) < since.findIndex((i) => i.id === b.id));
+  store.upsertRemote(makeIssue({ id: "fed:node-d:issue-1", originNodeId: "node-d", originIssueId: "issue-1" }));
+  const changes = store.localIssuesSince(undefined, 100);
+  assert.ok(changes.some(change => change.issue.id === a.id));
+  assert.ok(changes.every(change => !change.issue.originNodeId && !change.issue.isSeed));
 });
 
 test("peer cursors persist and update", () => {

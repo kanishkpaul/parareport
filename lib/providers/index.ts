@@ -14,7 +14,7 @@ export type AnalyzeOptions = {
 // Selects the analysis engine per request and always resolves to a valid
 // result. Selection order:
 //   1. BYOK, when the visitor supplied an OpenAI-compatible endpoint + key.
-//   2. Local Gemma, unless GEMMA_ENABLED=false.
+//   2. Local Gemma, when GEMMA_ENABLED=true.
 //   3. Deterministic rules engine (also the fallback when 1 or 2 fail).
 export async function analyzeReport(
   input: AnalyzeIssueInput,
@@ -38,7 +38,7 @@ export async function analyzeReport(
     return { output: analyzeIssue(input), engine: "rules" };
   }
 
-  const localEnabled = process.env.GEMMA_ENABLED !== "false";
+  const localEnabled = process.env.GEMMA_ENABLED === "true";
 
   if (localEnabled) {
     const output = await callOpenAICompatible({

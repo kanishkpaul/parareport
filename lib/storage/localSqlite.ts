@@ -10,6 +10,19 @@ export class LocalSqliteStore implements IssueStore {
     getDb().prepare(ISSUE_INSERT_SQL).run(...issueToRow(issue));
   }
 
+  updateAnalysis(issue: CivicIssue): void {
+    const previous = this.get(issue.id);
+    if (!previous || previous.originNodeId) return;
+    getDb().prepare(`UPDATE issues SET title=?, clean_summary=?, mode=?, category=?,
+      subcategories=?, severity=?, risk_flags=?, department_suggestions=?, receipt=?,
+      analysis_engine=?, updated_at=? WHERE id=?`).run(
+      issue.title, issue.cleanSummary, issue.mode, issue.category,
+      JSON.stringify(issue.subcategories), issue.severity, JSON.stringify(issue.riskFlags),
+      JSON.stringify(issue.departmentSuggestions), JSON.stringify(issue.receipt),
+      issue.analysisEngine, new Date(Math.max(Date.now(), Date.parse(previous.updatedAt) + 1)).toISOString(), issue.id
+    );
+  }
+
   get(id: string): CivicIssue | undefined {
     const row = getDb().prepare("SELECT * FROM issues WHERE id = ?").get(id) as
       | Record<string, unknown>
@@ -60,13 +73,13 @@ export class LocalSqliteStore implements IssueStore {
   }
 
   incrementUnresolved(id: string): CivicIssue | undefined {
-    const now = new Date().toISOString();
+    const previous = this.get(id);
+    if (!previous || previous.originNodeId) return undefined;
+    const now = new Date(Math.max(Date.now(), Date.parse(previous.updatedAt) + 1)).toISOString();
     getDb()
       .prepare(
         `UPDATE issues SET
           unresolved_confirmations = unresolved_confirmations + 1,
-          verification_count = verification_count + 1,
-          status = CASE WHEN status = 'new' THEN 'verified' ELSE status END,
           updated_at = ?
         WHERE id = ?`
       )
@@ -76,7 +89,9 @@ export class LocalSqliteStore implements IssueStore {
   }
 
   markFixed(id: string, proofUrl?: string): CivicIssue | undefined {
-    const now = new Date().toISOString();
+    const previous = this.get(id);
+    if (!previous || previous.originNodeId) return undefined;
+    const now = new Date(Math.max(Date.now(), Date.parse(previous.updatedAt) + 1)).toISOString();
     getDb()
       .prepare(
         "UPDATE issues SET status = 'fixed', fixed_proof_url = COALESCE(?, fixed_proof_url), updated_at = ? WHERE id = ?"
@@ -106,36 +121,39 @@ export class LocalSqliteStore implements IssueStore {
     }));
   }
 
-  localIssuesSince(cursor: string | undefined, limit: number): CivicIssue[] {
-    const where = ["origin_node_id IS NULL"];
-    const params: Array<string | number> = [];
-
-    if (cursor) {
-      where.push("created_at > ?");
-      params.push(cursor);
-    }
-
-    params.push(limit);
-
-    return (
-      getDb()
-        .prepare(
-          `SELECT * FROM issues WHERE ${where.join(" AND ")} ORDER BY created_at ASC, id ASC LIMIT ?`
-        )
-        .all(...params) as Record<string, unknown>[]
-    ).map(rowToIssue);
+  localIssuesSince(cursor: string | undefined, limit: number): Array<{ issue: CivicIssue; sequence: number }> {
+    if (cursor && !/^s:\d+$/.test(cursor)) throw new Error("Invalid federation cursor; reset the peer cursor.");
+    const sequence = cursor ? Number(cursor.slice(2)) : 0;
+    const rows = getDb().prepare(`
+      SELECT issues.*, changes.sequence FROM issues JOIN
+        (SELECT issue_id, MAX(sequence) AS sequence FROM federation_changes GROUP BY issue_id) changes
+      ON issues.id = changes.issue_id
+      WHERE changes.sequence > ? AND issues.origin_node_id IS NULL AND issues.is_seed = 0
+      ORDER BY changes.sequence LIMIT ?
+    `).all(sequence, limit) as Array<Record<string, unknown>>;
+    return rows.map(row => ({ issue: rowToIssue(row), sequence: row.sequence as number }));
   }
 
   upsertRemote(issue: CivicIssue): boolean {
     const result = getDb()
-      .prepare(`${ISSUE_INSERT_SQL} ON CONFLICT(id) DO NOTHING`)
+      .prepare(`${ISSUE_INSERT_SQL} ON CONFLICT(id) DO UPDATE SET
+        title=excluded.title, clean_summary=excluded.clean_summary, mode=excluded.mode,
+        category=excluded.category, severity=excluded.severity, status=excluded.status,
+        risk_flags=excluded.risk_flags, department_suggestions=excluded.department_suggestions,
+        location_text=excluded.location_text, landmark=excluded.landmark, ward=excluded.ward,
+        borough=excluded.borough, lat=excluded.lat, lng=excluded.lng,
+        verification_count=excluded.verification_count, unresolved_confirmations=excluded.unresolved_confirmations,
+        receipt=excluded.receipt, updated_at=excluded.updated_at, signature=excluded.signature,
+        analysis_engine=excluded.analysis_engine, federated_at=excluded.federated_at,
+        raw_text=excluded.raw_text
+        WHERE issues.origin_node_id = excluded.origin_node_id AND excluded.updated_at > issues.updated_at`)
       .run(...issueToRow(issue));
 
     return Number(result.changes) > 0;
   }
 
   countByOrigin(kind: "local" | "remote"): number {
-    const clause = kind === "local" ? "origin_node_id IS NULL" : "origin_node_id IS NOT NULL";
+    const clause = kind === "local" ? "origin_node_id IS NULL AND is_seed = 0" : "origin_node_id IS NOT NULL";
     const row = getDb().prepare(`SELECT COUNT(*) AS n FROM issues WHERE ${clause}`).get() as {
       n: number;
     };

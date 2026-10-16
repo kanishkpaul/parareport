@@ -45,8 +45,8 @@ export function IssueMap({ issues }: { issues: CivicIssue[] }) {
           .addTo(map!)
           .bindPopup(
             `<strong>${escapeHtml(issue.title)}</strong><br/>${escapeHtml(issue.locationText)}<br/>` +
-              `${issue.severity} · ${issue.status.replace("_", " ")}<br/>` +
-              `<a href="/issues/${issue.id}">View receipt</a>`
+              `${escapeHtml(issue.severity)} · ${escapeHtml(issue.status.replaceAll("_", " "))}<br/>` +
+              `<a href="/issues/${encodeURIComponent(issue.id)}">View receipt</a>`
           );
       }
 

@@ -152,6 +152,7 @@ export type ReportSubmissionResult = {
   receipt: CivicReceipt;
   cluster?: ClusterSummary;
   analysisEngine: AnalysisEngine;
+  analysisWarning?: string;
 };
 
 // --- federation -------------------------------------------------------------

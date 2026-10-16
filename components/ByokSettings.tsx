@@ -33,13 +33,17 @@ export function ByokSettings({ value, onChange }: Props) {
       return;
     }
 
-    saveByokConfig(trimmed);
-    onChange(trimmed);
-    setStatus("Saved for this browser tab. Reports will use your model.");
+    try {
+      const url = new URL(trimmed.baseUrl);
+      if (!["https:", "http:"].includes(url.protocol)) throw new Error("Use an HTTP or HTTPS endpoint.");
+      saveByokConfig(trimmed); onChange(trimmed);
+      setStatus("Saved for this browser tab. Reports will use your model.");
+    } catch { setStatus("Could not save. Use a valid HTTP(S) endpoint and allow session storage."); }
   }
 
   function clear() {
-    clearByokConfig();
+    try { clearByokConfig(); }
+    catch { setStatus("Browser storage is unavailable. Reload to reset the session."); return; }
     onChange(null);
     setBaseUrl("");
     setModel("");

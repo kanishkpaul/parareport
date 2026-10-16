@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s · ParaReport"
   },
   description:
-    "Turn citizen reports into verified civic receipts, department-ready complaint packets, and para-level civic memory for Kolkata."
+    "Turn citizen reports into structured report receipts, department-ready complaint packets, and para-level civic memory for Kolkata."
 };
 
 export const viewport: Viewport = {
@@ -38,6 +38,7 @@ export default function RootLayout({
         </header>
         {children}
         <footer className="site-footer">
+          <p>Hackathon demo · sample records are labeled · use synthetic reports only.</p>
           <p>
             ParaReport generates department-ready civic packets. It does not submit to KMC
             systems and does not claim official complaint status.

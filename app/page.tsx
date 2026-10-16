@@ -6,8 +6,8 @@ export default function Home() {
       <div className="page-intro">
         <h1>Report a civic issue</h1>
         <p>
-          One report becomes a civic receipt: severity, risk flags, department routing, a
-          Bengali warning, and an official English complaint — saved to your para&apos;s memory.
+          One report becomes a structured receipt: suggested severity, risk flags, department hints, a
+          Bengali warning, and an English complaint draft — saved to your para&apos;s memory.
         </p>
       </div>
       <ReportFlow />

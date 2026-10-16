@@ -133,7 +133,7 @@ function buildProfile(
       ],
       volunteerActions: [
         "Create a one-way crowd channel or widen the exit if possible.",
-        "Raise exposed wires and keep them away from barricades and standing water.",
+        "Keep people away from exposed wires; only qualified electrical workers should handle them.",
         "Empty rainwater collected in bamboo, tarpaulin, or temporary containers."
       ]
     };

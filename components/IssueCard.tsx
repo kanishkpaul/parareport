@@ -11,13 +11,18 @@ import { SeverityBadge } from "@/components/SeverityBadge";
 export function IssueCard({ issue }: { issue: CivicIssue }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const mode = getModeConfig(issue.mode);
 
   async function confirmUnresolved() {
     setIsPending(true);
-    await fetch(`/api/reports/${issue.id}/confirm`, { method: "POST" });
-    setIsPending(false);
-    router.refresh();
+    setError(null);
+    try {
+      const response = await fetch(`/api/reports/${encodeURIComponent(issue.id)}/confirm`, { method: "POST" });
+      if (!response.ok) throw new Error("Could not save the update. Try again.");
+      router.refresh();
+    } catch { setError("Could not save the update. Check the connection and try again."); }
+    finally { setIsPending(false); }
   }
 
   return (
@@ -25,7 +30,9 @@ export function IssueCard({ issue }: { issue: CivicIssue }) {
       <div className="issue-card-head">
         <span className="mode-tag">{mode.shortName}</span>
         <SeverityBadge severity={issue.severity} />
-        <span className={`status-tag status-${issue.status}`}>{issue.status.replace("_", " ")}</span>
+        <span className={`status-tag status-${issue.status}`}>{issue.status === "verified" ? "reported" : issue.status.replaceAll("_", " ")}</span>
+        {issue.isSeed ? <span className="mode-tag">Sample</span> : null}
+        {issue.originNodeId ? <span className="mode-tag">From {issue.originNodeId}</span> : null}
       </div>
 
       <h2>
@@ -52,14 +59,15 @@ export function IssueCard({ issue }: { issue: CivicIssue }) {
             ? ` · ${issue.unresolvedConfirmations} unresolved confirmation${issue.unresolvedConfirmations === 1 ? "" : "s"}`
             : ""}
         </span>
-        {issue.status !== "fixed" ? (
+        {issue.status !== "fixed" && !issue.originNodeId ? (
           <button type="button" className="quiet-action" onClick={confirmUnresolved} disabled={isPending}>
-            {isPending ? "Saving…" : "Still unresolved"}
+            {isPending ? "Saving…" : "Record unresolved (demo)"}
           </button>
         ) : (
-          <span className="fixed-note">Fixed{issue.fixedProofUrl ? " with proof" : ""}</span>
+          <span className="fixed-note">{issue.originNodeId ? "Synced receipt" : "Marked fixed · unreviewed"}</span>
         )}
       </div>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
     </article>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FederationPanel } from "@/components/FederationPanel";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { getModeConfig } from "@/lib/modes";
 import { getDashboardStats } from "@/lib/store";
@@ -17,7 +18,7 @@ export default function DashboardPage() {
     <main className="page wide">
       <div className="page-intro">
         <h1>Ward dashboard</h1>
-        <p>Live counts from the report database — no simulated numbers.</p>
+        <p>Demo database counts include labeled sample reports. Status changes are unreviewed.</p>
       </div>
 
       <div className="stat-grid">
@@ -26,6 +27,8 @@ export default function DashboardPage() {
         <Stat label="Reports (7 days)" value={stats.reportsLast7Days} />
         <Stat label="Fixed" value={stats.fixedIssues} />
       </div>
+
+      <FederationPanel />
 
       <section className="panel">
         <h2>Recurring hotspots</h2>
@@ -40,7 +43,7 @@ export default function DashboardPage() {
                 <div className="cluster-counts">
                   <SeverityBadge severity={cluster.severity} />
                   <strong>{cluster.reportCount} reports</strong>
-                  <span>{cluster.unresolvedConfirmations} unresolved confirmations</span>
+                  <span>{cluster.unresolvedConfirmations} unresolved anonymous updates</span>
                 </div>
               </li>
             ))}
@@ -70,12 +73,12 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel">
-        <h2>Most-confirmed unresolved issues</h2>
+        <h2>Unresolved update counts (demo)</h2>
         <ul className="plain-list">
           {stats.topUnresolved.map((issue) => (
             <li key={issue.id}>
               <Link href={`/issues/${issue.id}`}>{issue.title}</Link> — {issue.locationText} ·{" "}
-              {issue.unresolvedConfirmations} confirmations
+              {issue.unresolvedConfirmations} anonymous updates
             </li>
           ))}
         </ul>

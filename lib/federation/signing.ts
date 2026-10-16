@@ -1,3 +1,4 @@
+import { validEnvelope } from "@/lib/federation/validation";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FederatedIssuePayload, ReceiptEnvelope } from "@/types/civic";
 
@@ -61,8 +62,8 @@ export function createEnvelope(
 
 // Verifies an envelope's HMAC signature against the shared secret using a
 // constant-time comparison. Returns false for any structural or crypto mismatch.
-export function verifyEnvelope(envelope: ReceiptEnvelope, secret: string): boolean {
-  if (!envelope || envelope.version !== 1 || typeof envelope.signature !== "string") {
+export function verifyEnvelope(envelope: unknown, secret: string): boolean {
+  if (!validEnvelope(envelope)) {
     return false;
   }
 

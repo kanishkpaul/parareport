@@ -85,7 +85,7 @@ export function ReportForm({ selectedMode, onModeChange, onSubmit, isSubmitting 
           />
         </label>
         <label className="field-label" htmlFor="photo-upload">
-          Photo (optional)
+          Photo attachment (not analyzed)
           <input
             id="photo-upload"
             ref={fileInputRef}
@@ -108,7 +108,7 @@ export function ReportForm({ selectedMode, onModeChange, onSubmit, isSubmitting 
 
       <div className="action-row">
         <button type="submit" className="primary-action" disabled={isSubmitting}>
-          {isSubmitting ? "Analyzing…" : `Submit ${getModeConfig(selectedMode).shortName} report`}
+          {isSubmitting ? "Saving report…" : `Save ${getModeConfig(selectedMode).shortName} report`}
         </button>
         <button type="button" className="quiet-action" onClick={clear}>
           Clear

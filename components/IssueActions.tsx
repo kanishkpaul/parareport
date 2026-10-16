@@ -10,15 +10,19 @@ export function IssueActions({ issue }: { issue: CivicIssue }) {
   const [error, setError] = useState<string | null>(null);
   const [proof, setProof] = useState<File | null>(null);
 
-  if (issue.status === "fixed") {
+  if (issue.status === "fixed" || issue.originNodeId) {
     return null;
   }
 
   async function confirmUnresolved() {
     setIsPending(true);
-    await fetch(`/api/reports/${issue.id}/confirm`, { method: "POST" });
-    setIsPending(false);
-    router.refresh();
+    setError(null);
+    try {
+      const response = await fetch(`/api/reports/${encodeURIComponent(issue.id)}/confirm`, { method: "POST" });
+      if (!response.ok) throw new Error("Could not save the update. Try again.");
+      router.refresh();
+    } catch { setError("Could not save the update. Check the connection and try again."); }
+    finally { setIsPending(false); }
   }
 
   async function markFixed() {
@@ -30,25 +34,24 @@ export function IssueActions({ issue }: { issue: CivicIssue }) {
       form.set("proof", proof);
     }
 
-    const response = await fetch(`/api/reports/${issue.id}/resolve`, {
-      method: "POST",
-      body: form
-    });
-
-    if (!response.ok) {
-      setError((await response.json()).error || "Could not update the report.");
-    }
-
-    setIsPending(false);
-    router.refresh();
+    try {
+      const response = await fetch(`/api/reports/${encodeURIComponent(issue.id)}/resolve`, { method: "POST", body: form });
+      if (!response.ok) {
+        const body = await response.json();
+        throw new Error(body.error || "Could not update the report.");
+      }
+      router.refresh();
+    } catch (error) { setError(error instanceof Error ? error.message : "Could not update the report. Try again."); }
+    finally { setIsPending(false); }
   }
 
   return (
     <section className="panel issue-actions" aria-label="Update this report">
-      <h2>Is this still a problem?</h2>
+      <h2>Demo status updates</h2>
+      <p>Anonymous updates are not independent verification.</p>
       <div className="action-row">
         <button type="button" className="primary-action" onClick={confirmUnresolved} disabled={isPending}>
-          Still unresolved
+          Record unresolved (demo)
         </button>
         <label className="field-label proof-field">
           Proof photo (optional)
@@ -59,7 +62,7 @@ export function IssueActions({ issue }: { issue: CivicIssue }) {
           />
         </label>
         <button type="button" className="quiet-action" onClick={markFixed} disabled={isPending}>
-          Mark fixed
+          Mark fixed (unreviewed)
         </button>
       </div>
       {error ? <p className="form-error" role="alert">{error}</p> : null}

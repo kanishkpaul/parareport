@@ -66,8 +66,8 @@ export async function callOpenAICompatible(
     }
 
     return normalizeModelOutput(candidate, call.input);
-  } catch (error) {
-    console.error("Model analysis failed; falling back to rules engine", error);
+  } catch {
+    console.error("Model analysis failed; falling back to rules engine");
     return null;
   }
 }
@@ -116,7 +116,7 @@ export function normalizeModelOutput(
       ? candidate.severity!
       : fallback.severity,
     riskFlags: strArray(candidate.riskFlags) ?? fallback.riskFlags,
-    followUpQuestion: str(candidate.followUpQuestion) || undefined,
+    followUpQuestion: str(candidate.followUpQuestion) || fallback.followUpQuestion,
     departmentSuggestions: strArray(candidate.departmentSuggestions) ?? fallback.departmentSuggestions,
     cleanSummary: str(candidate.cleanSummary) || fallback.cleanSummary,
     officialEnglishComplaint:

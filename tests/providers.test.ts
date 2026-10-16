@@ -78,7 +78,8 @@ test("BYOK failure falls back to the rules engine, not local gemma", async () =>
   assert.equal(calls[0].url, "https://api.example.com/v1/chat/completions");
 });
 
-test("local gemma is used when no BYOK config is present", async () => {
+test("local gemma is used when explicitly enabled", async () => {
+  process.env.GEMMA_ENABLED = "true";
   mockFetch(() => okModelResponse());
 
   const result = await analyzeReport(input, {});
@@ -90,6 +91,7 @@ test("local gemma is used when no BYOK config is present", async () => {
 });
 
 test("local gemma failure falls back to rules", async () => {
+  process.env.GEMMA_ENABLED = "true";
   mockFetch(() => {
     throw new Error("connection refused");
   });
@@ -151,4 +153,12 @@ test("byokHeaders only emits the three BYOK headers and nothing when unset", () 
     apiKey: "sk-secret"
   });
   assert.deepEqual(Object.keys(headers).sort(), [BYOK_HEADERS.apiKey, BYOK_HEADERS.baseUrl, BYOK_HEADERS.model].sort());
+});
+
+test("default demo uses rules without contacting a model", async () => {
+  delete process.env.GEMMA_ENABLED;
+  mockFetch(() => { throw new Error("Default demo must not request inference"); });
+  const result = await analyzeReport(input);
+  assert.equal(result.engine, "rules");
+  assert.equal(calls.length, 0);
 });

@@ -27,11 +27,12 @@ export type ClusterCandidate = {
 // because the local backend is node:sqlite; that keeps the call sites simple.
 export interface IssueStore {
   insert(issue: CivicIssue): void;
+  updateAnalysis(issue: CivicIssue): void;
   get(id: string): CivicIssue | undefined;
   has(id: string): boolean;
   list(filters: ListFilters): CivicIssue[];
 
-  // Adds an unresolved confirmation and bumps verification/status. Returns the
+  // Records an anonymous unresolved update without changing verification. Returns the
   // updated issue, or undefined if the id is unknown.
   incrementUnresolved(id: string): CivicIssue | undefined;
   markFixed(id: string, proofUrl?: string): CivicIssue | undefined;
@@ -41,12 +42,10 @@ export interface IssueStore {
 
   // --- federation ---------------------------------------------------------
 
-  // Locally-authored issues emitted after `cursor` (a created_at bookmark),
-  // ordered oldest-first, for the outbound receipt feed.
-  localIssuesSince(cursor: string | undefined, limit: number): CivicIssue[];
+  // Sequence bookmarks include new reports and later local changes, excluding samples.
+  localIssuesSince(cursor: string | undefined, limit: number): Array<{ issue: CivicIssue; sequence: number }>;
 
-  // Inserts a remote-origin issue if its id is new. Returns true if inserted,
-  // false if it already existed (dedupe).
+  // Inserts new origin snapshots or applies newer ones; returns whether storage changed.
   upsertRemote(issue: CivicIssue): boolean;
 
   countByOrigin(kind: "local" | "remote"): number;

@@ -56,12 +56,14 @@ export function CivicReceiptCard({ receipt, issueId }: CivicReceiptCardProps) {
         <ActionList title="Volunteer / club checklist" actions={receipt.volunteerActions} />
       </div>
 
-      <TextPacket label="Official English complaint" text={receipt.officialEnglishComplaint} />
+      <TextPacket label="Authority packet draft · placeholder" text={receipt.officialEnglishComplaint} />
       <TextPacket label="Bengali share text" text={receipt.bengaliShareText} whatsapp />
       {receipt.hindiShareText ? (
         <TextPacket label="Hindi share text" text={receipt.hindiShareText} whatsapp />
       ) : null}
 
+      <p>Authority submission is a placeholder. Nothing is sent or tracked.</p>
+      <p>Classification and language output are suggestions; photos are attachments only.</p>
       <ShareRow issueId={issueId} />
     </article>
   );
@@ -104,33 +106,37 @@ function TextPacket({ label, text, whatsapp }: { label: string; text: string; wh
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(false);
 
   async function copy() {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(text); setCopied(true); setError(false);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch { setError(true); }
   }
 
   return (
     <button type="button" className="quiet-action" onClick={copy}>
-      {copied ? "Copied" : "Copy"}
+      {error ? "Copy unavailable · select text above" : copied ? "Copied" : "Copy"}
     </button>
   );
 }
 
 function ShareRow({ issueId }: { issueId: string }) {
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(false);
 
   async function copyLink() {
-    await navigator.clipboard.writeText(`${window.location.origin}/issues/${issueId}`);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/issues/${encodeURIComponent(issueId)}`);
+      setCopied(true); setError(false); window.setTimeout(() => setCopied(false), 1500);
+    } catch { setError(true); }
   }
 
   return (
     <div className="share-row">
       <button type="button" className="quiet-action" onClick={copyLink}>
-        {copied ? "Link copied" : "Copy public link"}
+        {error ? "Copy unavailable · use the address bar" : copied ? "Link copied" : "Copy public link"}
       </button>
     </div>
   );

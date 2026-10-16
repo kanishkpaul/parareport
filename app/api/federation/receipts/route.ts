@@ -1,30 +1,26 @@
 import { NextResponse } from "next/server";
 import { buildFeed, importEnvelopes } from "@/lib/federation/service";
 import { getNodeId } from "@/lib/federation/config";
-import type { ReceiptEnvelope } from "@/types/civic";
 
 export const runtime = "nodejs";
 
-// Outbound feed: signed local receipts a peer can pull, filtered by ?since=cursor.
 export async function GET(request: Request) {
   const since = new URL(request.url).searchParams.get("since") || undefined;
-  const { envelopes, cursor } = buildFeed(since);
-
-  return NextResponse.json({ nodeId: getNodeId(), envelopes, cursor });
+  if (since && !/^s:\d+$/.test(since)) return NextResponse.json({ error: "Invalid sequence cursor." }, { status: 400 });
+  try { return NextResponse.json({ nodeId: getNodeId(), ...buildFeed(since) }); }
+  catch { return NextResponse.json({ error: "Configure a unique node ID and shared secret." }, { status: 503 }); }
 }
 
-// Inbound push: a peer publishes a batch of signed envelopes to this node.
 export async function POST(request: Request) {
-  let envelopes: ReceiptEnvelope[];
-
   try {
-    const body = await request.json();
-    envelopes = Array.isArray(body?.envelopes) ? body.envelopes : [];
+    const raw = await request.text();
+    if (raw.length > 2_000_000) return NextResponse.json({ error: "Batch too large." }, { status: 413 });
+    const body = JSON.parse(raw);
+    if (!Array.isArray(body?.envelopes) || body.envelopes.length > 200) {
+      return NextResponse.json({ error: "Provide an envelopes array with at most 200 entries." }, { status: 400 });
+    }
+    return NextResponse.json(importEnvelopes(body.envelopes));
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid receipt batch." }, { status: 400 });
   }
-
-  const result = importEnvelopes(envelopes);
-
-  return NextResponse.json(result);
 }
